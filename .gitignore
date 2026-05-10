@@ -18,3 +18,5 @@ Thumbs.db
 .idea/
 data/
 *.csv
+data_export_*.json
+.streamlit/secrets.toml
