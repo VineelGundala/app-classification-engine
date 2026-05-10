@@ -13,16 +13,14 @@ st.set_page_config(
 API_URL = "http://127.0.0.1:8000"
 
 def get_connection():
-    import os
-    from dotenv import load_dotenv
-    load_dotenv()
-    # Use Streamlit secrets if available (cloud), else use .env (local)
     try:
-        import streamlit as st
         db_url = st.secrets["DATABASE_URL"]
     except:
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
         db_url = os.getenv('DATABASE_URL')
-    return psycopg2.connect(db_url)
+    return psycopg2.connect(db_url, sslmode='require')
 
 def get_all_apps():
     conn = get_connection()
