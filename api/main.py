@@ -2,7 +2,15 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 import psycopg2
 import json
+import os
+import logging
 from typing import Optional
+from dotenv import load_dotenv
+
+load_dotenv()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="AppWeave Classification API",
@@ -18,9 +26,7 @@ app.add_middleware(
 )
 
 def get_connection():
-    return psycopg2.connect(
-        'postgresql://admin:appweave123@localhost:5432/appweave'
-    )
+    return psycopg2.connect(os.environ["DATABASE_URL"])
 
 # Health check
 @app.get("/health")
@@ -38,7 +44,7 @@ def get_app(package_name: str, country: str = "in"):
                    c.gender_label, c.gender_score, c.gender_confidence,
                    c.gender_reasoning, c.age_primary, c.age_primary_score,
                    c.income_label, c.income_score, c.signal_tier,
-                   c.interests, c.classified_at
+                   c.interests, c.classified_at, c.tokens_used, c.model_used
             FROM app_metadata m
             JOIN app_classifications c ON m.package_name = c.package_name
             WHERE m.package_name=%s AND m.country=%s
@@ -68,8 +74,15 @@ def get_app(package_name: str, country: str = "in"):
             },
             "signal_tier": row[12],
             "interests": row[13],
-            "classified_at": str(row[14])
+            "classified_at": str(row[14]),
+            "tokens_used": row[15],
+            "model_used": row[16]
         }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching app {package_name}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         cursor.close()
         conn.close()
@@ -130,6 +143,9 @@ def search_apps(
                 for row in rows
             ]
         }
+    except Exception as e:
+        logger.error(f"Error searching apps: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         cursor.close()
         conn.close()
@@ -161,6 +177,9 @@ def batch_lookup(package_names: list[str], country: str = "in"):
                 for row in rows
             ]
         }
+    except Exception as e:
+        logger.error(f"Error in batch lookup: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         cursor.close()
         conn.close()
@@ -203,12 +222,23 @@ def get_stats(country: str = "in"):
         """, (country,))
         categories = {row[0]: row[1] for row in cursor.fetchall()}
 
+        cursor.execute("""
+            SELECT SUM(tokens_used)
+            FROM app_classifications
+            WHERE country=%s
+        """, (country,))
+        total_tokens = cursor.fetchone()[0] or 0
+
         return {
             "total_classified": total,
             "tier_distribution": tiers,
             "gender_distribution": genders,
-            "category_distribution": categories
+            "category_distribution": categories,
+            "total_tokens_used": total_tokens
         }
+    except Exception as e:
+        logger.error(f"Error fetching stats: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         cursor.close()
         conn.close()
@@ -230,9 +260,11 @@ def override_classification(
             WHERE package_name=%s AND country=%s
         """, (gender, signal_tier, package_name, country))
         conn.commit()
+        logger.info(f"Override saved for {package_name}")
         return {"message": "Override saved successfully"}
     except Exception as e:
         conn.rollback()
+        logger.error(f"Error saving override for {package_name}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         cursor.close()

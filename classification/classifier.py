@@ -2,15 +2,19 @@ import os
 import json
 import psycopg2
 import time
-from groq import Groq
+import logging
+from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
 
-client = Groq(api_key=os.getenv('GROQ_API_KEY'))
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 def get_connection():
-    return psycopg2.connect('postgresql://admin:appweave123@localhost:5432/appweave')
+    return psycopg2.connect(os.environ["DATABASE_URL"])
 
 def get_app_metadata(package_name, country='in'):
     conn = get_connection()
@@ -48,8 +52,8 @@ def get_app_reviews(package_name, country='in', limit=50):
 def classify_with_llm(app_name, category, description, content_rating, country, reviews):
     reviews_text = '\n'.join([f'- {r}' for r in reviews[:20]])
 
-    prompt = f"""You are an expert mobile app demographic analyst specializing in the Indian market.
-You have analyzed thousands of apps and understand exactly which apps skew male, female, or neutral.
+    prompt = f"""You are an expert mobile app demographic analyst.
+Analyze this app and determine who uses it based on signals from the app details and reviews.
 
 APP DETAILS:
 App Name: {app_name}
@@ -90,14 +94,7 @@ Step 4 - Income Signal:
 - Financial apps (Zerodha, ET Markets) -> mid-high income
 - Loan apps -> low-mid income
 
-KNOWN REFERENCE POINTS (use these to calibrate):
-- Nykaa = female, 18-34, mid income, Tier S
-- Dream11 = male, 18-35, mid income, Tier S
-- WhatsApp = neutral, all ages, all income, Tier C
-- Zomato = slight male, 18-34, mid income, Tier B
-- Meesho = female, 18-34, low-mid income, Tier A
-
-Respond ONLY in this exact JSON format, nothing else:
+Respond ONLY in this exact JSON format:
 {{
     "gender": {{
         "label": "male or female or neutral",
@@ -119,19 +116,20 @@ Respond ONLY in this exact JSON format, nothing else:
     "interests": ["interest1", "interest2", "interest3"]
 }}
 
-Signal tier rules (be strict):
+Signal tier rules:
 S = score > 0.85, very obvious demographic skew
 A = score 0.65-0.85, clear but not overwhelming skew
 B = score 0.55-0.65, slight skew with some evidence
-C = score 0.45-0.55, no clear signal, used by everyone"""
+C = score <= 0.55, no clear signal, used by everyone"""
 
     response = client.chat.completions.create(
-        model='llama-3.1-8b-instant',
+        model='gpt-4o-mini',
         messages=[{'role': 'user', 'content': prompt}],
-        temperature=0.1
+        temperature=0.1,
+        response_format={"type": "json_object"}
     )
 
-    return response.choices[0].message.content
+    return response.choices[0].message.content, response.usage.total_tokens
 
 def save_classification(package_name, country, result, tokens_used):
     conn = get_connection()
@@ -147,6 +145,7 @@ def save_classification(package_name, country, result, tokens_used):
             gender_label=EXCLUDED.gender_label,
             gender_score=EXCLUDED.gender_score,
             signal_tier=EXCLUDED.signal_tier,
+            tokens_used=EXCLUDED.tokens_used,
             classified_at=NOW()
         """, (
             package_name,
@@ -162,13 +161,13 @@ def save_classification(package_name, country, result, tokens_used):
             result['income']['score'],
             result['signal_tier'],
             json.dumps(result['interests']),
-            'llama-3.1-8b-instant',
+            'gpt-4o-mini',
             tokens_used
         ))
         conn.commit()
-        print(f"Saved classification for {package_name}")
+        logger.info(f"Saved classification for {package_name}")
     except Exception as e:
-        print(f"Error saving: {e}")
+        logger.error(f"Failed to save classification for {package_name}: {e}")
         conn.rollback()
     finally:
         cursor.close()
@@ -177,14 +176,14 @@ def save_classification(package_name, country, result, tokens_used):
 def classify_app(package_name, country='in'):
     metadata = get_app_metadata(package_name, country)
     if not metadata:
-        print(f"No metadata found for {package_name}")
-        return
+        logger.warning(f"No metadata found for {package_name}")
+        return None
 
     reviews = get_app_reviews(package_name, country)
-    print(f"Classifying: {metadata['app_name']}...")
+    logger.info(f"Classifying: {metadata['app_name']}...")
 
     try:
-        raw_result = classify_with_llm(
+        raw_result, tokens_used = classify_with_llm(
             metadata['app_name'],
             metadata['category'],
             metadata['description'],
@@ -193,20 +192,16 @@ def classify_app(package_name, country='in'):
             reviews
         )
 
-        clean = raw_result.strip()
-        if '```json' in clean:
-            clean = clean.split('```json')[1].split('```')[0]
-        elif '```' in clean:
-            clean = clean.split('```')[1].split('```')[0]
-
-        result = json.loads(clean)
-        save_classification(package_name, country, result, 0)
-        print(f"Done: {metadata['app_name']} -> Gender: {result['gender']['label']} | Tier: {result['signal_tier']}")
-        time.sleep(3)
+        result = json.loads(raw_result)
+        save_classification(package_name, country, result, tokens_used)
+        logger.info(f"Done: {metadata['app_name']} -> Gender: {result['gender']['label']} | Tier: {result['signal_tier']} | Tokens: {tokens_used}")
+        time.sleep(1)
+        return result
 
     except Exception as e:
-        print(f"Error classifying {package_name}: {e}")
-        time.sleep(5)
+        logger.error(f"Error classifying {package_name}: {e}")
+        time.sleep(3)
+        return None
 
 def classify_all_apps(country='in'):
     conn = get_connection()
@@ -216,11 +211,11 @@ def classify_all_apps(country='in'):
     cursor.close()
     conn.close()
 
-    print(f"Classifying {len(apps)} apps...")
+    logger.info(f"Classifying {len(apps)} apps...")
     for i, (package_name,) in enumerate(apps):
-        print(f"[{i+1}/{len(apps)}]", end=' ')
+        logger.info(f"[{i+1}/{len(apps)}]")
         classify_app(package_name, country)
-    print("All apps classified!")
+    logger.info("All apps classified!")
 
 def classify_failed_apps(country='in'):
     conn = get_connection()
@@ -234,11 +229,11 @@ def classify_failed_apps(country='in'):
     cursor.close()
     conn.close()
 
-    print(f"Reclassifying {len(apps)} failed apps...")
+    logger.info(f"Reclassifying {len(apps)} failed apps...")
     for i, (package_name,) in enumerate(apps):
-        print(f"[{i+1}/{len(apps)}]", end=' ')
+        logger.info(f"[{i+1}/{len(apps)}]")
         classify_app(package_name, country)
-    print("Done!")
+    logger.info("Done!")
 
 if __name__ == "__main__":
     classify_all_apps(country='in')
