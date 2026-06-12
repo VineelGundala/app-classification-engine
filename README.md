@@ -15,7 +15,10 @@ LLM-powered demographic classifier for mobile apps.
 - See tests/eval.py for accuracy metrics
 
 ## Team
-- Vineel Gundala — Full Stack
+- Gundala Vineel — Full Stack
+- Konda Spandana — Data Collection
+- Siva Sankar Nemani — LLM Classification
+- Lavesh — Dashboard & API
 
 ## Tech Stack
 - Language  : Python 3.13
