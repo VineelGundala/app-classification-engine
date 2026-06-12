@@ -1,6 +1,15 @@
-streamlit
+fastapi
+uvicorn
 psycopg2-binary
 pandas
 plotly
+streamlit
 requests
 python-dotenv
+openai
+groq
+google-play-scraper
+sqlalchemy
+alembic
+tenacity
+rich
