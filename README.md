@@ -2,12 +2,13 @@
 
 LLM-powered demographic classifier for mobile apps.
 
-## Accuracy (10-app held-out eval)
-- Gender accuracy : 100%
-- Age accuracy    : 90%
-- Income accuracy : 100%
-- Tier accuracy   : 90%
+## Accuracy (30-app held-out eval)
+- Gender accuracy : 73%
+- Age accuracy    : 77%
+- Income accuracy : 80%
+- Tier accuracy   : 67%
 - Model used      : GPT-4o-mini
+- Note: 6 apps skipped (not in dataset)
 
 ## Current Status
 - 98 Indian apps classified (gender, age, income, signal tier)

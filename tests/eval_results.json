@@ -1,9 +1,9 @@
 {
-  "total": 10,
-  "gender_correct": 10,
-  "age_correct": 9,
-  "income_correct": 10,
-  "tier_correct": 9,
+  "total": 30,
+  "gender_correct": 22,
+  "age_correct": 23,
+  "income_correct": 24,
+  "tier_correct": 20,
   "failures": [
     {
       "app": "com.fsn.nds",
@@ -12,10 +12,40 @@
       "got": "A"
     },
     {
-      "app": "com.linkedin.android",
+      "app": "com.instagram.android",
+      "field": "signal_tier",
+      "expected": "B",
+      "got": "C"
+    },
+    {
+      "app": "com.whizdm.moneyview.loans",
+      "field": "gender",
+      "expected": "male",
+      "got": "neutral"
+    },
+    {
+      "app": "com.whizdm.moneyview.loans",
+      "field": "signal_tier",
+      "expected": "A",
+      "got": "B"
+    },
+    {
+      "app": "com.bigbasket.mobileapp",
       "field": "age",
       "expected": "18-34",
       "got": "35-54"
+    },
+    {
+      "app": "com.balancehero.truebalance",
+      "field": "gender",
+      "expected": "male",
+      "got": "neutral"
+    },
+    {
+      "app": "com.balancehero.truebalance",
+      "field": "signal_tier",
+      "expected": "A",
+      "got": "B"
     }
   ]
 }
