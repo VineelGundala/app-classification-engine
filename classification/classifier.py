@@ -116,11 +116,17 @@ Respond ONLY in this exact JSON format:
     "interests": ["interest1", "interest2", "interest3"]
 }}
 
-Signal tier rules:
-S = score > 0.85, very obvious demographic skew
-A = score 0.65-0.85, clear but not overwhelming skew
-B = score 0.55-0.65, slight skew with some evidence
-C = score <= 0.55, no clear signal, used by everyone"""
+Signal tier rules (be very strict):
+S = score > 0.85, ONLY for apps that are CLEARLY for one gender
+    Examples: beauty apps, period trackers (female S), fantasy cricket, beard trimmers (male S)
+A = score 0.65-0.85, clear skew but not overwhelming
+    Examples: fashion apps, cooking apps (female A), sports apps, gaming (male A)
+B = score 0.55-0.65, slight skew with weak evidence
+    Examples: food delivery, travel apps
+C = score <= 0.55, NO clear signal - used equally by everyone
+    Examples: WhatsApp, Google Pay, YouTube, Chrome, maps
+    If an app is used by EVERYONE regardless of gender -> MUST be C tier
+    Universal apps like messaging, payments, search -> always C"""
 
     response = client.chat.completions.create(
         model='gpt-4o-mini',

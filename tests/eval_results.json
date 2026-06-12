@@ -1,0 +1,21 @@
+{
+  "total": 10,
+  "gender_correct": 10,
+  "age_correct": 9,
+  "income_correct": 10,
+  "tier_correct": 9,
+  "failures": [
+    {
+      "app": "com.fsn.nds",
+      "field": "signal_tier",
+      "expected": "S",
+      "got": "A"
+    },
+    {
+      "app": "com.linkedin.android",
+      "field": "age",
+      "expected": "18-34",
+      "got": "35-54"
+    }
+  ]
+}

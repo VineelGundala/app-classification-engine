@@ -1,0 +1,12 @@
+[
+  {"package_name": "com.fsn.nds", "expected": {"gender": "female", "age": "18-34", "income": "mid", "signal_tier": "S"}, "rationale": "Nykaa Fashion - beauty app explicitly targeting women"},
+  {"package_name": "com.meesho.supply", "expected": {"gender": "female", "age": "18-34", "income": "low", "signal_tier": "A"}, "rationale": "Value fashion app popular with budget-conscious women"},
+  {"package_name": "com.myntra.android", "expected": {"gender": "female", "age": "18-34", "income": "mid", "signal_tier": "A"}, "rationale": "Fashion app with female skew"},
+  {"package_name": "com.whatsapp", "expected": {"gender": "neutral", "age": "18-34", "income": "mid", "signal_tier": "C"}, "rationale": "Universal messaging app used by everyone"},
+  {"package_name": "com.instagram.android", "expected": {"gender": "neutral", "age": "18-34", "income": "mid", "signal_tier": "B"}, "rationale": "Social media used by all genders equally"},
+  {"package_name": "com.application.zomato", "expected": {"gender": "neutral", "age": "18-34", "income": "mid", "signal_tier": "B"}, "rationale": "Food delivery used by all genders"},
+  {"package_name": "in.swiggy.android", "expected": {"gender": "neutral", "age": "18-34", "income": "mid", "signal_tier": "B"}, "rationale": "Food delivery used by all genders"},
+  {"package_name": "com.linkedin.android", "expected": {"gender": "neutral", "age": "18-34", "income": "high", "signal_tier": "B"}, "rationale": "Professional network used by all genders"},
+  {"package_name": "com.snapchat.android", "expected": {"gender": "neutral", "age": "18-34", "income": "mid", "signal_tier": "B"}, "rationale": "Social app popular with young adults"},
+  {"package_name": "com.google.android.apps.nbu.paisa.user", "expected": {"gender": "neutral", "age": "18-34", "income": "mid", "signal_tier": "C"}, "rationale": "Google Pay - universal payment app"}
+]
