@@ -54,6 +54,7 @@ def classify_with_llm(app_name, category, description, content_rating, country, 
 
     prompt = f"""You are an expert mobile app demographic analyst.
 Analyze this app and determine who uses it based on signals from the app details and reviews.
+The app is from {country.upper()} market - use country context when relevant.
 
 APP DETAILS:
 App Name: {app_name}

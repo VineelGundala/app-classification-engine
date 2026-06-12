@@ -1,0 +1,7 @@
+# Development and testing dependencies
+pytest
+pytest-asyncio
+black
+flake8
+ipython
+jupyter
